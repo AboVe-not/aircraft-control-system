@@ -1,7 +1,7 @@
 function P = default_config()
-% All user-adjustable parameters for laboratory work 1, variant 6.
-% Table 1, row 6: H=4 km, V=800 km/h, M=0.81, V=264 m/s.
-P.variant = 6;
+% User-adjustable parameters for the aircraft control system.
+% Default flight condition used by this project.
+P.configuration_id = 6;
 P.H_km = 4;
 P.V_kmh = 800;
 P.Mach = 0.81;
@@ -26,17 +26,17 @@ P.design.static_pitch = [-P.design.static_frequency*[1 1], ...
     -P.design.static_pitch_outer_frequency];
 P.design.astatic_pitch = [-P.design.astatic_frequency*[1 1 1], ...
     -P.design.astatic_pitch_outer_frequency];
-[P.static,P.design.result.static_ny] = lr1.standard_coefficients(P,'static_ny',P.design.static_ny);
-[P.astatic,P.design.result.astatic_ny] = lr1.standard_coefficients(P,'astatic_ny',P.design.astatic_ny);
-[P.pitch_static,P.design.result.static_pitch] = lr1.standard_coefficients(P,'static_pitch',P.design.static_pitch);
-[P.pitch_astatic,P.design.result.astatic_pitch] = lr1.standard_coefficients(P,'astatic_pitch',P.design.astatic_pitch);
+[P.static,P.design.result.static_ny] = ACS.standard_coefficients(P,'static_ny',P.design.static_ny);
+[P.astatic,P.design.result.astatic_ny] = ACS.standard_coefficients(P,'astatic_ny',P.design.astatic_ny);
+[P.pitch_static,P.design.result.static_pitch] = ACS.standard_coefficients(P,'static_pitch',P.design.static_pitch);
+[P.pitch_astatic,P.design.result.astatic_pitch] = ACS.standard_coefficients(P,'astatic_pitch',P.design.astatic_pitch);
 
 P.f1 = P.c1 + P.c4 + P.c5;
 P.f0 = P.c2 + P.c1 * P.c4;
 P.omega_aircraft = sqrt(P.f0);
 P.zeta_aircraft = P.f1 / (2 * P.omega_aircraft);
 
-% Not specified in the assignment. Change after experimental tuning.
+% User-selectable actuator settings for the full model.
 P.actuator.dynamic = true;
 % Независимое предварительное значение для проверки полной модели.
 % Метод стандартных коэффициентов ниже не определяет частоту привода.
@@ -44,7 +44,7 @@ P.actuator.Omega = 30;
 P.actuator.zeta = 0.80;
 P.actuator.options = 5:5:30;
 
-% Таблица 2 используется только для сравнения, не для синтеза/оптимизации.
+% Справочные коэффициенты используются только для сравнения, не для синтеза/оптимизации.
 P.reference.static_ny = struct('Kn',1.11,'Kw',0.32,'Ki',0,'Ktheta',0);
 P.reference.astatic_ny = struct('Kn',1.16,'Kw',0.44,'Ki',5.25,'Ktheta',0);
 P.reference.static_pitch = struct('Kn',1.11,'Kw',0.32,'Ki',0,'Ktheta',1);

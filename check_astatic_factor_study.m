@@ -1,7 +1,7 @@
 function check_astatic_factor_study()
-P=lr1.default_config(); original=P; rng(6);
+P=ACS.default_config(); original=P; rng(6);
 for Ki=[P.reference.astatic_ny.Ki P.astatic.Ki]
-    S=lr1.astatic_factor_study(P,Ki);
+    S=ACS.astatic_factor_study(P,Ki);
     assert(isequal(P,original)); assert(numel(S.panels)==5);
     assert(isequal(S.panels(5).values,Ki*[.5 1 1.5]));
     for i=1:5
@@ -15,9 +15,9 @@ for Ki=[P.reference.astatic_ny.Ki P.astatic.Ki]
             for k=1:100
                 ix=randi(numel(m.x)); iy=randi(numel(m.y));
                 g.Kn=m.x(ix); g.Kw=m.y(iy);
-                p=lr1.characteristic(Q,'astatic_ny',g);
+                p=ACS.characteristic(Q,'astatic_ny',g);
                 if abs(m.margin(iy,ix))>1e-8
-                    H=lr1.hurwitz_test(p);
+                    H=ACS.hurwitz_test(p);
                     assert(m.stable(iy,ix)==H.stable);
                     assert(m.stable(iy,ix)==all(real(roots(p))<0));
                 end

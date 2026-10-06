@@ -1,5 +1,5 @@
-% ЛР1, вариант 6. Расчёт и исследование одной выбранной системы.
+% Запуск интерактивного исследования выбранной системы.
 % Пакетные факторные эксперименты сохранены в run_experiments.m.
 root=fileparts(mfilename('fullpath'));
 addpath(root);
-interactive_lr1;
+interactive_mode;

@@ -8,7 +8,7 @@ for attempt=1:5
     y=unique([linspace(bounds(3),bounds(4),35),gy]);
     [X,Y]=meshgrid(x,y); mask=false(size(X));
     for j=1:numel(gains)
-        S=lr1.stability_map(P,kind,gains{j},x,y); mask=mask | S.stable;
+        S=ACS.stability_map(P,kind,gains{j},x,y); mask=mask | S.stable;
     end
     stableX=X(mask); stableY=Y(mask);
     touches=[any(mask(:,1)),any(mask(:,end)),any(mask(1,:)),any(mask(end,:))];
@@ -29,7 +29,7 @@ for attempt=1:4
     x=linspace(bounds(1),bounds(2),101); y=linspace(bounds(3),bounds(4),81);
     mask=false(numel(y),numel(x));
     for j=1:numel(gains)
-        S=lr1.stability_map(P,kind,gains{j},x,y); mask=mask | S.stable;
+        S=ACS.stability_map(P,kind,gains{j},x,y); mask=mask | S.stable;
     end
     touches=[any(mask(:,1)),any(mask(:,end)),any(mask(1,:)),any(mask(end,:))];
     if ~any(touches), break; end

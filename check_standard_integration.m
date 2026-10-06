@@ -12,8 +12,8 @@ for j=1:4
     callback=modes.ValueChangedFcn; callback(modes,[]);
     drawnow;
 end
-P=lr1.default_config();
-paths=lr1.build_simulink(P,fullfile(root,'models_standard'));
+P=ACS.default_config();
+paths=ACS.build_simulink(P,fullfile(root,'models_standard'));
 kinds={'static_ny','astatic_ny','static_pitch','astatic_pitch'};
 for j=1:4
     load_system(paths{j});
@@ -21,7 +21,7 @@ for j=1:4
     model_cleanup=onCleanup(@()close_system(mdl,0));
     set_param(mdl,'SimulationCommand','update');
     [A,~,~,~]=linmod(mdl);
-    sys=lr1.closed_loop(P,kinds{j});
+    sys=ACS.closed_loop(P,kinds{j});
     actual=real(poly(eig(A))); expected=real(poly(pole(sys)));
     assert(numel(actual)==numel(expected));
     assert(norm(actual-expected,inf)/max(1,norm(expected,inf))<1e-7, ...

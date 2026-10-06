@@ -3,7 +3,7 @@ function fig = interactive_mode(visible,auto_refine)
 if nargin<1, visible='on'; end
 if nargin<2, auto_refine=true; end
 root=fileparts(mfilename('fullpath')); addpath(root);
-P=lr1.default_config(); kinds={'static_ny','astatic_ny','static_pitch','astatic_pitch'};
+P=ACS.default_config(); kinds={'static_ny','astatic_ny','static_pitch','astatic_pitch'};
 names={'Перегрузка, статическая','Перегрузка, астатическая', ...
     'Тангаж, статический внутренний контур','Тангаж, астатический внутренний контур'};
 kind=kinds{1}; keys={'Kn','Kw','Ki','Ktheta'};
@@ -13,19 +13,19 @@ if isfile(saved_file)
     if isfield(loaded,'baselines'), baselines=loaded.baselines; end
 end
 cache=containers.Map(); mapCache=containers.Map(); domainCache=containers.Map(); pins={}; R=[];
-initial=lr1.gain_settings(P,kind); candidate=initial;
+initial=ACS.gain_settings(P,kind); candidate=initial;
 if isfield(baselines,kind), candidate=baselines.(kind); end
 busy=false; cancelled=false; closing=false; lastDrag=tic;
 curveNames={}; curveGains={}; colors=[]; trace=gobjects(0,3);
 mapPoints=gobjects(0); mihLines=gobjects(0); bands=gobjects(0);
 tableData=cell(0,6); tEnd=10;
-fig=uifigure('Name','ЛР1, вариант 6. Синтез и устойчивость', ...
+fig=uifigure('Name','Системы управления самолётом. Синтез и устойчивость', ...
     'Position',[25 45 1780 1000],'Visible',visible,'CloseRequestFcn',@close_window);
 shell=uigridlayout(fig,[1 1]); shell.Padding=[0 0 0 0];
 tabs=uitabgroup(shell,'Tag','study_tabs');
 mainTab=uitab(tabs,'Title','Переходные процессы и настройка');
 factorTab=uitab(tabs,'Title','Влияние c и частоты привода','Tag','factor_tab');
-ensureFactors=lr1.factor_study_page(factorTab,P);
+ensureFactors=ACS.factor_study_page(factorTab,P);
 tabs.SelectionChangedFcn=@(~,e)select_page(e.NewValue);
 main=uigridlayout(mainTab,[1 2]); main.ColumnWidth={330,'1x'};
 left=uigridlayout(main,[23 1]); left.Layout.Column=1; left.Scrollable='on';
@@ -94,7 +94,7 @@ if auto_refine, calculate(false); end
     end
     function select_mode()
         if busy, return; end
-        kind=modeBox.Value; pins={}; R=[]; initial=lr1.gain_settings(P,kind); candidate=initial;
+        kind=modeBox.Value; pins={}; R=[]; initial=ACS.gain_settings(P,kind); candidate=initial;
         if isfield(baselines,kind), candidate=baselines.(kind); end
         sync_controls(); render_all();
         if auto_refine, calculate(false); end
@@ -120,7 +120,7 @@ if auto_refine, calculate(false); end
         end
         busy=true; cancelled=false; controls_enabled(false); status.Text='Расчёт выбранной системы'; drawnow;
         try
-            R=lr1.refine_design(P,kind,@progress); cache(key)=R;
+            R=ACS.refine_design(P,kind,@progress); cache(key)=R;
             candidate=R.refined;
             if ~force, restore_user(); end
         catch err
@@ -172,13 +172,13 @@ if auto_refine, calculate(false); end
     end
     function pin_current()
         if numel(pins)>=countBox.Value, status.Text='Увеличьте число дополнительных сравнений.'; return; end
-        if ~lr1.hurwitz_test(lr1.characteristic(P,kind,candidate)).stable
+        if ~ACS.hurwitz_test(ACS.characteristic(P,kind,candidate)).stable
             status.Text='Неустойчивую настройку нельзя зафиксировать.'; return;
         end
         pins{end+1}=candidate; render_all();
     end
     function save_current()
-        if ~lr1.hurwitz_test(lr1.characteristic(P,kind,candidate)).stable
+        if ~ACS.hurwitz_test(ACS.characteristic(P,kind,candidate)).stable
             status.Text='Неустойчивую настройку нельзя сохранить как исходную.'; return;
         end
         baselines.(kind)=candidate; save(saved_file,'baselines');
@@ -196,7 +196,7 @@ if auto_refine, calculate(false); end
         if ~isempty(R)
             curveNames{end+1}='Уточнённая'; curveGains{end+1}=R.refined; colors(end+1,:)=[0 .48 .75];
         end
-        curveNames{end+1}='Методичка'; curveGains{end+1}=P.reference.(kind); colors(end+1,:)=[.85 .32 .05];
+        curveNames{end+1}='Справочная настройка'; curveGains{end+1}=P.reference.(kind); colors(end+1,:)=[.85 .32 .05];
         extra=lines(max(1,numel(pins)));
         for jj=1:numel(pins)
             curveNames{end+1}=sprintf('Сравнение %d',jj); curveGains{end+1}=pins{jj}; colors(end+1,:)=extra(jj,:);
@@ -213,7 +213,7 @@ if auto_refine, calculate(false); end
         end
         bands=gobjects(0);
         for ii=1:n
-            T=lr1.transients(P,kind,curveGains{ii},tEnd); style='-';
+            T=ACS.transients(P,kind,curveGains{ii},tEnd); style='-';
             if ii==n, style='--'; end
             for jj=1:3
                 trace(ii,jj)=plot(ax(jj),T.t,T.y(:,jj),style,'Color',colors(ii,:), ...
@@ -225,14 +225,14 @@ if auto_refine, calculate(false); end
         render_mikhailov(); update_current(true);
     end
     function row=metric_row(name,g)
-        M=lr1.reference_metrics(P,kind,g,P.refinement.validation_dt);
-        H=lr1.hurwitz_test(lr1.characteristic(P,kind,g)); answer='нет';
+        M=ACS.reference_metrics(P,kind,g,P.refinement.validation_dt);
+        H=ACS.hurwitz_test(ACS.characteristic(P,kind,g)); answer='нет';
         if M.met, answer='да'; end
         row={name,H.status,round(M.overshoot,3),round(M.settling,3),round(M.steady,4),answer};
     end
     function update_current(force)
         if isempty(trace), return; end
-        curveGains{end}=candidate; T=lr1.transients(P,kind,candidate,tEnd);
+        curveGains{end}=candidate; T=ACS.transients(P,kind,candidate,tEnd);
         for jj=1:3
             trace(end,jj).XData=T.t; trace(end,jj).YData=T.y(:,jj);
             trace(end,jj).DisplayName=gain_text('Текущая',candidate);
@@ -250,7 +250,7 @@ if auto_refine, calculate(false); end
             end
         end
         tableData(end,:)=metric_row('Текущая',candidate); metricsTable.Data=tableData;
-        z=lr1.mikhailov_curve(lr1.characteristic(P,kind,candidate));
+        z=ACS.mikhailov_curve(ACS.characteristic(P,kind,candidate));
         mihLines(end).XData=real(z); mihLines(end).YData=imag(z);
         mihLines(end).DisplayName=gain_text('Текущая',candidate);
         if force
@@ -267,7 +267,7 @@ if auto_refine, calculate(false); end
         xline(mihAx,0,'HandleVisibility','off'); yline(mihAx,0,'HandleVisibility','off');
         mihLines=gobjects(1,numel(curveGains));
         for ii=1:numel(curveGains)
-            z=lr1.mikhailov_curve(lr1.characteristic(P,kind,curveGains{ii})); style='-';
+            z=ACS.mikhailov_curve(ACS.characteristic(P,kind,curveGains{ii})); style='-';
             if ii==numel(curveGains), style='--'; end
             mihLines(ii)=plot(mihAx,real(z),imag(z),style,'Color',colors(ii,:), ...
                 'DisplayName',gain_text(curveNames{ii},curveGains{ii}),'LineWidth',1.3);
@@ -286,7 +286,7 @@ if auto_refine, calculate(false); end
         if isKey(domainCache,domainKey), bounds=domainCache(domainKey);
         else
             [~,uniqueSlices]=unique(cell2mat(cellfun(@(g)[g.Ki;g.Ktheta],curveGains,'UniformOutput',false)).','rows');
-            bounds=lr1.map_domain(P,kind,curveGains(uniqueSlices));
+            bounds=ACS.map_domain(P,kind,curveGains(uniqueSlices));
             if domainCache.Count>30, domainCache=containers.Map(); end
             domainCache(domainKey)=bounds;
         end
@@ -300,7 +300,7 @@ if auto_refine, calculate(false); end
             key=[key sprintf('_%.9g',bounds)];
             if isKey(mapCache,key), S=mapCache(key);
             else
-                S=lr1.stability_map(P,kind,g,xx,yy);
+                S=ACS.stability_map(P,kind,g,xx,yy);
                 if mapCache.Count>40, mapCache=containers.Map(); end
                 mapCache(key)=S;
             end
@@ -336,8 +336,8 @@ if auto_refine, calculate(false); end
         modelGains={initial,P.reference.(kind),candidate}; modelNames={'initial','reference','current'};
         if ~isempty(R), modelGains{end+1}=R.refined; modelNames{end+1}='refined'; end
         for jj=1:numel(modelGains)
-            Q=lr1.apply_settings(P,kind,modelGains{jj}); Q.t_end=tEnd;
-            lr1.build_simulink(Q,fullfile(folder,['models_' modelNames{jj}]),{kind},'.slx',true,['_' modelNames{jj}]);
+            Q=ACS.apply_settings(P,kind,modelGains{jj}); Q.t_end=tEnd;
+            ACS.build_simulink(Q,fullfile(folder,['models_' modelNames{jj}]),{kind},'.slx',true,['_' modelNames{jj}]);
         end
         status.Text='Сохранены 5 графиков, параметры расчёта и модели Simulink выбранной системы.';
     end

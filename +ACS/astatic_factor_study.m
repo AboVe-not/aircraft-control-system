@@ -3,7 +3,7 @@ function study=astatic_factor_study(P,Ki)
 if nargin<2, Ki=P.reference.astatic_ny.Ki; end
 validateattributes(Ki,{'numeric'},{'scalar','real','finite','positive'});
 P.actuator.dynamic=true; P.actuator.Omega=20; P.actuator.zeta=.8;
-g=lr1.gain_settings(P,'astatic_ny'); ref=P.reference.astatic_ny;
+g=ACS.gain_settings(P,'astatic_ny'); ref=P.reference.astatic_ny;
 g.Ki=Ki; ref.Ki=Ki;
 fields={'c2','c1','c9','Omega','Ki'};
 values={P.c2*[.5 1 1.5],P.c1*[.5 1 1.5],P.c9*[0 1 2],[10 15 20],Ki*[.5 1 1.5]};
@@ -37,8 +37,8 @@ for i=1:5
     for j=1:3
         q=settings{j}; r=ref; r.Ki=q.Ki;
         panel.maps{j}=local_map(models{j},q,x,y);
-        panel.initial_stable(j)=lr1.hurwitz_test(lr1.characteristic(models{j},'astatic_ny',q)).stable;
-        panel.reference_stable(j)=lr1.hurwitz_test(lr1.characteristic(models{j},'astatic_ny',r)).stable;
+        panel.initial_stable(j)=ACS.hurwitz_test(ACS.characteristic(models{j},'astatic_ny',q)).stable;
+        panel.reference_stable(j)=ACS.hurwitz_test(ACS.characteristic(models{j},'astatic_ny',r)).stable;
     end
     study.panels=[study.panels panel]; %#ok<AGROW>
 end
@@ -47,9 +47,9 @@ end
 function S=local_map(P,g,x,y)
 % Полный полином пятого порядка, включая интегратор и динамический привод.
 [X,Y]=meshgrid(x,y); q=g; q.Kn=0; q.Kw=0;
-p0=lr1.characteristic(P,'astatic_ny',q);
-q.Kn=1; pn=lr1.characteristic(P,'astatic_ny',q)-p0;
-q.Kn=0; q.Kw=1; pw=lr1.characteristic(P,'astatic_ny',q)-p0;
+p0=ACS.characteristic(P,'astatic_ny',q);
+q.Kn=1; pn=ACS.characteristic(P,'astatic_ny',q)-p0;
+q.Kn=0; q.Kw=1; pw=ACS.characteristic(P,'astatic_ny',q)-p0;
 a=cell(1,5);
 scale=max(1,abs(p0(end))^(1/5));
 for k=1:5, a{k}=(p0(k+1)+pn(k+1)*X+pw(k+1)*Y)/scale^k; end

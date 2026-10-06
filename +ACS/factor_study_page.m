@@ -3,13 +3,13 @@ function ensure= factor_study_page(parent,P)
 S=[]; studyKind='static_ny'; savedStudies=containers.Map();
 layout=uigridlayout(parent,[4 1]); layout.RowHeight={36,65,'1x',40};
 controls=uigridlayout(layout,[1 4]); controls.ColumnWidth={280,150,120,'1x'}; controls.Padding=[0 0 0 0];
-mode=uidropdown(controls,'Items',{'Статическая перегрузка','Астатическая перегрузка'}, ...
+modeBox=uidropdown(controls,'Items',{'Статическая перегрузка','Астатическая перегрузка'}, ...
     'ItemsData',{'static_ny','astatic_ny'},'Tag','factor_mode','ValueChangedFcn',@change_mode);
 uilabel(controls,'Text','Фиксированный Ki');
 kiBox=uieditfield(controls,'numeric','Limits',[.001 100],'Value',P.reference.astatic_ny.Ki, ...
     'Enable','off','Tag','factor_Ki','ValueChangedFcn',@(~,~)calculate(false));
-uilabel(controls,'Text','Ki по умолчанию из таблицы 2');
-description=uilabel(layout,'Text',['Статический контур перегрузки, вариант 6. Меняется только один параметр. ' ...
+uilabel(controls,'Text','Ki по умолчанию из конфигурации');
+description=uilabel(layout,'Text',['Статический контур перегрузки. Меняется только один параметр. ' ...
     'Для c₁, c₂, c₉ привод Ω = 20 рад/с. Для частоты Ω = 10, 15, 20 рад/с. ' ...
     'Во всех случаях ξ = 0,8. Настройки основного окна не изменяются.'],'WordWrap','on');
 pages=uitabgroup(layout); basePage=uitab(pages,'Title','Влияние c и привода');
@@ -30,7 +30,7 @@ status=uilabel(buttons,'Text','Графики рассчитываются пр�
 ensure=@()calculate(false);
 
     function change_mode(~,~)
-        studyKind=mode.Value;
+        studyKind=modeBox.Value;
         kiBox.Enable=matlab.lang.OnOffSwitchState(strcmp(studyKind,'astatic_ny'));
         if strcmp(studyKind,'static_ny'), pages.SelectedTab=basePage; end
         calculate(false);
@@ -40,20 +40,20 @@ ensure=@()calculate(false);
         status.Text='Расчёт областей по критерию Гурвица'; drawnow;
         if ~force && isKey(savedStudies,key), S=savedStudies(key);
         else
-            if strcmp(studyKind,'static_ny'), S=lr1.static_factor_study(P);
-            else, S=lr1.astatic_factor_study(P,kiBox.Value); end
+            if strcmp(studyKind,'static_ny'), S=ACS.static_factor_study(P);
+            else, S=ACS.astatic_factor_study(P,kiBox.Value); end
             if savedStudies.Count>12, savedStudies=containers.Map(); end
             savedStudies(key)=S;
         end
         isAst=strcmp(studyKind,'astatic_ny');
         if isAst
             contourName='Астатический контур ny';
-            description.Text=sprintf(['Вариант 6. Для c и Ω фиксирован Ki = %.4g. ' ...
+            description.Text=sprintf(['Текущая конфигурация. Для c и Ω фиксирован Ki = %.4g. ' ...
                 'Отдельная страница показывает влияние Ki. Для c и Ki привод Ω = 20 рад/с, ξ = 0,8. ' ...
-                'Точки СК и методички показывают только Kn и Kw при Ki выбранной серии. Основная модель не меняется.'],kiBox.Value);
+                'Точки СК и справочной настройки показывают только Kn и Kw при Ki выбранной серии. Основная модель не меняется.'],kiBox.Value);
         else
             contourName='Статический контур ny';
-            description.Text='Вариант 6. Меняется только один параметр. Для c привод Ω = 20 рад/с, ξ = 0,8. Частоты 10, 15, 20 рад/с. Основная модель не меняется.';
+            description.Text='Текущая конфигурация. Меняется только один параметр. Для c привод Ω = 20 рад/с, ξ = 0,8. Частоты 10, 15, 20 рад/с. Основная модель не меняется.';
             cla(axesList(5),'reset'); title(axesList(5),'Ki отсутствует в статическом контуре');
         end
         colors=[0 .447 .741; .85 .325 .098; 0 .5 .2];
@@ -72,7 +72,7 @@ ensure=@()calculate(false);
             plot(ax,S.gains.Kn,S.gains.Kw,'ko','MarkerFaceColor','k','MarkerSize',6, ...
                 'DisplayName',sprintf('СК, Kn=%.4g Kw=%.4g',S.gains.Kn,S.gains.Kw));
             plot(ax,S.reference.Kn,S.reference.Kw,'kd','MarkerFaceColor','w','MarkerSize',7, ...
-                'DisplayName',sprintf('Методичка, Kn=%.4g Kw=%.4g',S.reference.Kn,S.reference.Kw));
+                'DisplayName',sprintf('Справочная настройка, Kn=%.4g Kw=%.4g',S.reference.Kn,S.reference.Kw));
             xline(ax,0,':','HandleVisibility','off'); yline(ax,0,':','HandleVisibility','off');
             xlabel(ax,'K_{ny}'); ylabel(ax,'K_{\omega_z}');
             titles={'Влияние c₂','Влияние c₁','Влияние c₉','Влияние частоты привода','Влияние Ki'};

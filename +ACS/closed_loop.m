@@ -1,7 +1,7 @@
 function sys = closed_loop(P, kind)
 % Exact linear block interconnection. Inputs are reference, gust, moment.
 % Outputs are ny, omega, theta, delta. Moment means M_z/I_z in deg/s^2.
-[A,B,C,D] = lr1.plant_matrices(P);
+[A,B,C,D] = ACS.plant_matrices(P);
 aircraft = ss(A,B,C,D);
 aircraft.InputName = {'delta','gust','moment'};
 aircraft.OutputName = {'ny','omega','theta'};

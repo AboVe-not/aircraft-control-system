@@ -2,7 +2,7 @@ function R = refine_design(P,kind,progress)
 % Ограниченное уточнение СК по полной модели. Эталон не используется.
 % progress(info) возвращает true для досрочной остановки пользователем.
 if nargin<3, progress=[]; end
-[initial,keys]=lr1.gain_settings(P,kind);
+[initial,keys]=ACS.gain_settings(P,kind);
 allkeys={'Kn','Kw','Ki','Ktheta'};
 indices=cellfun(@(s)find(strcmp(allkeys,s)),keys);
 lo=P.refinement.lower(indices); hi=P.refinement.upper(indices);
@@ -10,7 +10,7 @@ x0=cellfun(@(s)initial.(s),keys);
 assert(all(x0>lo & x0<hi),'Начальная настройка должна лежать внутри ограничений.');
 clock=tic; evaluations=0; iterations=0; cancelled=false; reached=false;
 best=initial; bestJ=Inf; history=zeros(0,4); lastUpdate=0;
-M0=lr1.reference_metrics(P,kind,initial,P.refinement.validation_dt);
+M0=ACS.reference_metrics(P,kind,initial,P.refinement.validation_dt);
 % Сохраняем форму начального стандартного полинома с добавленным приводом.
 target=P.design.result.(kind).target;
 if P.actuator.dynamic
@@ -19,11 +19,11 @@ end
 target=target/target(1);
 dcFloor=0;
 if strcmp(kind,'static_ny')
-    [p0,n0]=lr1.characteristic(P,kind,initial);
+    [p0,n0]=ACS.characteristic(P,kind,initial);
     dcFloor=max(0,n0(end)/p0(end));
 end
 objective(encode(x0));
-% Несколько стартов только из рассчитанных СК, не из таблицы методички.
+% Несколько стартов формируются только из рассчитанных СК, без использования справочных коэффициентов.
 factors=[1 .55 1.5 .25];
 for attempt=1:numel(factors)
     if stop_now(), break; end
@@ -35,7 +35,7 @@ for attempt=1:numel(factors)
         'TolX',1e-5,'TolFun',1e-5,'OutputFcn',@output);
     fminsearch(@objective,encode(seed),options);
 end
-M=lr1.reference_metrics(P,kind,best,P.refinement.validation_dt);
+M=ACS.reference_metrics(P,kind,best,P.refinement.validation_dt);
 if cancelled, reason='Остановлено пользователем';
 elseif M.met, reason='Целевые показатели достигнуты';
 elseif toc(clock)>=P.refinement.max_seconds, reason='Достигнут лимит времени';
@@ -47,8 +47,8 @@ R=struct('initial',initial,'refined',best,'initial_metrics',M0,'metrics',M, ...
     'iterations',iterations,'evaluations',evaluations,'seconds',toc(clock), ...
     'reason',reason,'history',history,'objective',bestJ,'target_polynomial',target, ...
     'dc_floor',dcFloor,'settings',P.refinement, ...
-    'initial_hurwitz',lr1.hurwitz_test(lr1.characteristic(P,kind,initial)), ...
-    'refined_hurwitz',lr1.hurwitz_test(lr1.characteristic(P,kind,best)));
+    'initial_hurwitz',ACS.hurwitz_test(ACS.characteristic(P,kind,initial)), ...
+    'refined_hurwitz',ACS.hurwitz_test(ACS.characteristic(P,kind,best)));
 
     function z=encode(x)
         r=(x-lo)./(hi-lo); z=log(r./(1-r));
@@ -65,14 +65,14 @@ R=struct('initial',initial,'refined',best,'initial_metrics',M0,'metrics',M, ...
     function J=objective(z)
         if stop_now(), J=1e12; return; end
         evaluations=evaluations+1;
-        g=decode(z); [p,~]=lr1.characteristic(P,kind,g);
-        H=lr1.hurwitz_test(p);
+        g=decode(z); [p,~]=ACS.characteristic(P,kind,g);
+        H=ACS.hurwitz_test(p);
         if ~H.stable
             % Корни дают направление штрафа, вердикт даёт критерий Гурвица.
             J=1e8+1e5*max(0,max(real(roots(p))));
             return
         end
-        Mtest=lr1.reference_metrics(P,kind,g);
+        Mtest=ACS.reference_metrics(P,kind,g);
         Ts=Mtest.settling;
         if ~isfinite(Ts), Ts=2*P.refinement.horizon; end
         eOS=max(0,Mtest.overshoot/P.refinement.max_overshoot-1);
@@ -85,7 +85,7 @@ R=struct('initial',initial,'refined',best,'initial_metrics',M0,'metrics',M, ...
             bestJ=J; best=g;
             history(end+1,:)=[evaluations J Mtest.overshoot Mtest.settling];
             if Mtest.met
-                fine=lr1.reference_metrics(P,kind,g,P.refinement.validation_dt);
+                fine=ACS.reference_metrics(P,kind,g,P.refinement.validation_dt);
                 reached=fine.met;
             end
         end

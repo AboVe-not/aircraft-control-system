@@ -2,12 +2,12 @@
 clear; clc;
 root = fileparts(mfilename('fullpath'));
 addpath(root);
-P = lr1.default_config();
+P = ACS.default_config();
 out = fullfile(root,'results');
 models = fullfile(root,'models_standard');
 if ~exist(out,'dir'), mkdir(out); end
 
-fprintf('Variant %d, H=%.1f km, V=%.0f km/h\n',P.variant,P.H_km,P.V_kmh);
+fprintf('Configuration %d, H=%.1f km, V=%.0f km/h\n',P.configuration_id,P.H_km,P.V_kmh);
 fprintf('Aircraft omega_n=%.4f rad/s, zeta=%.4f\n', ...
     P.omega_aircraft,P.zeta_aircraft);
 fprintf('Стандартные коэффициенты контура ny, Kn=%.4f, Kw=%.4f. Для тангажа Ktheta=%.4f\n', ...
@@ -16,8 +16,8 @@ fprintf('Assumed actuator Omega=%.4f rad/s, zeta=%.4f\n', ...
     P.actuator.Omega,P.actuator.zeta);
 
 fid=fopen(fullfile(out,'parameters.txt'),'w');
-fprintf(fid,'Variant %d. H=%.1f km, V=%.0f km/h.\n', ...
-    P.variant,P.H_km,P.V_kmh);
+fprintf(fid,'Configuration %d. H=%.1f km, V=%.0f km/h.\n', ...
+    P.configuration_id,P.H_km,P.V_kmh);
 fprintf(fid,'Aircraft natural frequency %.6f rad/s, damping %.6f.\n', ...
     P.omega_aircraft,P.zeta_aircraft);
 fprintf(fid,'Синтез с идеальным приводом. Контур ny, Kn %.6f, Kw %.6f. Для тангажа Ktheta %.6f.\n', ...
@@ -36,8 +36,8 @@ end
 fclose(fid);
 
 % Control System Toolbox models preserve the exact elevator lift term c9.
-ny_sys = lr1.closed_loop(P,'static_ny');
-pitch_sys = lr1.closed_loop(P,'static_pitch');
+ny_sys = ACS.closed_loop(P,'static_ny');
+pitch_sys = ACS.closed_loop(P,'static_pitch');
 % Theta is a free kinematic integrator in an ny-only loop. Judge the ny
 % dynamics after removing that unobservable/uncontrolled pole at zero.
 assert(isstable(minreal(ny_sys(1,:),1e-7)), ...
@@ -62,7 +62,7 @@ local_case(pitch_sys,t,[0,P.command.gust,0],3, ...
 
 % Compare the ideal and dynamic actuators with every other parameter fixed.
 P_ideal=P; P_ideal.actuator.dynamic=false;
-sys_ideal=lr1.closed_loop(P_ideal,'static_ny');
+sys_ideal=ACS.closed_loop(P_ideal,'static_ny');
 u=[ones(size(t))*P.command.ny,zeros(numel(t),2)];
 y1=lsim(sys_ideal,u,t); y2=lsim(ny_sys,u,t);
 f=figure('Visible','off');
@@ -86,7 +86,7 @@ local_nominal_region(P,out);
 local_metrics(P,ny_sys,pitch_sys,t,out);
 
 if license('test','Simulink')
-    created=lr1.build_simulink(P,models);
+    created=ACS.build_simulink(P,models);
     fprintf('Simulink models created\n'); disp(created(:));
 else
     warning('Simulink is not licensed; .slx models were not created.');
@@ -117,7 +117,7 @@ for i=1:numel(multipliers)
         Q.static.(name)=P.static.(name)*multipliers(i);
         kind='static_ny'; output=1; amplitude=P.command.ny;
     end
-    sys=lr1.closed_loop(Q,kind);
+    sys=ACS.closed_loop(Q,kind);
     u=[ones(numel(t),1)*amplitude,zeros(numel(t),2)];
     y=lsim(sys,u,t);
     plot(t,y(:,output),'LineWidth',1.2);
@@ -145,7 +145,7 @@ for k=1:numel(multipliers)
     R=zeros(numel(Kw),numel(Kn));
     for i=1:numel(Kn)
         for j=1:numel(Kw)
-            R(j,i)=max(real(roots(lr1.static_characteristic(Q,Kn(i),Kw(j)))));
+            R(j,i)=max(real(roots(ACS.static_characteristic(Q,Kn(i),Kw(j)))));
         end
     end
     contour(Kn,Kw,R,[0 0],'LineWidth',1.6,'LineColor',colors(k,:));
@@ -164,7 +164,7 @@ Kw=linspace(0,4*P.static.Kw,90);
 R=zeros(numel(Kw),numel(Kn));
 for i=1:numel(Kn)
     for j=1:numel(Kw)
-        R(j,i)=max(real(roots(lr1.static_characteristic(P,Kn(i),Kw(j)))));
+        R(j,i)=max(real(roots(ACS.static_characteristic(P,Kn(i),Kw(j)))));
     end
 end
 f=figure('Visible','off');

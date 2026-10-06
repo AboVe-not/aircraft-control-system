@@ -19,7 +19,7 @@ switch kind
         base = [D 0 0]; terms = {[N 0 0],[W 0 0],[N 0],W};
         % Последняя неизвестная L = Ki*Ktheta.
     otherwise
-        error('lr1:Kind','Неизвестная система %s.',kind);
+        error('mode:Kind','Неизвестная система %s.',kind);
 end
 n = numel(base)-1;
 assert(numel(desired_poles)==n,'Число заданных полюсов должно равняться порядку модели.');

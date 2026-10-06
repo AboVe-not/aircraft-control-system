@@ -1,7 +1,7 @@
 function paths = build_simulink(P, output_dir, kinds, extension, save_models, suffix)
 % Four editable component-level Simulink models corresponding to Figs. 1-4.
 if ~exist(output_dir,'dir'), mkdir(output_dir); end
-[A_aircraft,B_aircraft,C_aircraft,D_aircraft] = lr1.plant_matrices(P);
+[A_aircraft,B_aircraft,C_aircraft,D_aircraft] = ACS.plant_matrices(P);
 if nargin<3
     kinds = {'static_ny','astatic_ny','static_pitch','astatic_pitch'};
 elseif ischar(kinds) || isstring(kinds)
@@ -13,7 +13,7 @@ if nargin<6, suffix=''; end
 paths = cell(size(kinds));
 for j=1:numel(kinds)
     kind = kinds{j};
-    mdl = ['lr1_v6_' kind suffix];
+    mdl = ['mode_v6_' kind suffix];
     if bdIsLoaded(mdl)
         assert(strcmp(get_param(mdl,'Dirty'),'off'), ...
             'В модели %s есть несохранённые изменения. Сначала сохраните её.',mdl);

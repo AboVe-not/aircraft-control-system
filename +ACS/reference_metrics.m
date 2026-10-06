@@ -1,7 +1,7 @@
 function [M,t,y] = reference_metrics(P,kind,g,dt)
 if nargin<4, dt=P.refinement.dt; end
-[p,num]=lr1.characteristic(P,kind,g);
-H=lr1.hurwitz_test(p);
+[p,num]=ACS.characteristic(P,kind,g);
+H=ACS.hurwitz_test(p);
 M=struct('stable',H.stable,'overshoot',Inf,'settling',Inf,'steady',NaN, ...
     'tracking_error',NaN,'ise',Inf,'horizon',P.refinement.horizon,'met',false);
 t=[]; y=[];

@@ -2,7 +2,7 @@ function study=static_factor_study(P)
 % Изолированные однофакторные эксперименты статического контура ny.
 % Параметры P на выходе не изменяются, повторного синтеза K нет.
 P.actuator.dynamic=true; P.actuator.Omega=20; P.actuator.zeta=.8;
-g=lr1.gain_settings(P,'static_ny'); ref=P.reference.static_ny;
+g=ACS.gain_settings(P,'static_ny'); ref=P.reference.static_ny;
 fields={'c2','c1','c9','Omega'};
 values={P.c2*[.5 1 1.5],P.c1*[.5 1 1.5],P.c9*[0 1 2],[10 15 20]};
 study=struct('config',P,'gains',g,'reference',ref,'panels',[]);
@@ -34,8 +34,8 @@ for i=1:4
     x=linspace(bounds(1),bounds(2),401); y=linspace(bounds(3),bounds(4),321);
     for j=1:3
         panel.maps{j}=local_map(models{j},g,x,y);
-        panel.initial_stable(j)=lr1.hurwitz_test(lr1.characteristic(models{j},'static_ny',g)).stable;
-        panel.reference_stable(j)=lr1.hurwitz_test(lr1.characteristic(models{j},'static_ny',ref)).stable;
+        panel.initial_stable(j)=ACS.hurwitz_test(ACS.characteristic(models{j},'static_ny',g)).stable;
+        panel.reference_stable(j)=ACS.hurwitz_test(ACS.characteristic(models{j},'static_ny',ref)).stable;
     end
     study.panels=[study.panels panel]; %#ok<AGROW>
 end
@@ -46,9 +46,9 @@ function S=local_map(P,g,x,y)
 % p=s^4+a1*s^3+a2*s^2+a3*s+a4. При положительных коэффициентах
 % достаточно H2=a1*a2-a3>0 и H3=H2*a3-a1^2*a4>0.
 [X,Y]=meshgrid(x,y); q=g; q.Kn=0; q.Kw=0;
-p0=lr1.characteristic(P,'static_ny',q);
-q.Kn=1; pn=lr1.characteristic(P,'static_ny',q)-p0;
-q.Kn=0; q.Kw=1; pw=lr1.characteristic(P,'static_ny',q)-p0;
+p0=ACS.characteristic(P,'static_ny',q);
+q.Kn=1; pn=ACS.characteristic(P,'static_ny',q)-p0;
+q.Kn=0; q.Kw=1; pw=ACS.characteristic(P,'static_ny',q)-p0;
 a=cell(1,4);
 for k=1:4, a{k}=p0(k+1)+pn(k+1)*X+pw(k+1)*Y; end
 h2=a{1}.*a{2}-a{3}; h3=h2.*a{3}-a{1}.^2.*a{4};
